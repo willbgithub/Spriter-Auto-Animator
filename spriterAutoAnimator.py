@@ -82,16 +82,8 @@ def animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, 
     folder = createFolder(projectFile, frameFolder)
     newAnimation = createAnimation(projectFile, frameFolder, setsOfProperties, repeatCount, preserveFrames, folder)
 
-try:
-    projectFile = open(r"C:\\Users\wilje\Documents\\codingBullshit\\not current project\Spriter Auto Animator\\glorpyFile.scml").read()
-except:
-    projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\glorpyFile.scml").read()
-try:
-    os.listdir(r"C:\\Users\wilje\Documents\\codingBullshit\\not current project\Spriter Auto Animator\\imagesFolder")
-except:
-    frameFolder = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\imagesFolder"
-else:
-    frameFolder = r"C:\\Users\wilje\Documents\\codingBullshit\\not current project\Spriter Auto Animator\\imagesFolder"
+projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\glorpyFile.scml").read()
+frameFolder = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\imagesFolder"
 setsOfProperties = [{
     "x": "0",
     "y": "0",
