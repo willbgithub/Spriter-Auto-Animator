@@ -93,7 +93,8 @@ setsOfProperties = [{
     "pivot_x": "0",
     "pivot_y": "1",
     "a": "1",
-    "length": "333"
+    "length": "333",
+    "gaming" : True
 }]
 repeatCount = 0
 preserveFrames = False
