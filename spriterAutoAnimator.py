@@ -85,7 +85,6 @@ def animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, 
 projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\glorpyFile.scml").read()
 frameFolder = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\imagesFolder"
 repeatCount = 0
-preserveFrames = False
 setsOfProperties = [{
     "x": "15",
     "y": "20",
@@ -109,4 +108,5 @@ setsOfProperties = [{
     "length": "200"
 }]
 repeatCount = 1
+preserveFrames = False
 animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, preserveFrames)
