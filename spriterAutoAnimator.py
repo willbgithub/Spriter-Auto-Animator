@@ -84,18 +84,6 @@ def animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, 
 
 projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\glorpyFile.scml").read()
 frameFolder = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\imagesFolder"
-setsOfProperties = [{
-    "x": "0",
-    "y": "0",
-    "angle": "0",
-    "scale_x": "1",
-    "scale_y": "1",
-    "pivot_x": "0",
-    "pivot_y": "1",
-    "a": "1",
-    "length": "333",
-    "gaming" : True
-}]
 repeatCount = 0
 preserveFrames = False
 animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, preserveFrames)
