@@ -86,4 +86,27 @@ projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\gl
 frameFolder = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\imagesFolder"
 repeatCount = 0
 preserveFrames = False
+setsOfProperties = [{
+    "x": "15",
+    "y": "20",
+    "angle": "30",
+    "scale_x": "1.5",
+    "scale_y": "0.5",
+    "pivot_x": "0.2",
+    "pivot_y": "0.9",
+    "a": "0.7",
+    "length": "500"
+},
+{
+    "x": "-15",
+    "y": "-20",
+    "angle": "330",
+    "scale_x": "0.5",
+    "scale_y": "1.5",
+    "pivot_x": "0.4",
+    "pivot_y": "0.7",
+    "a": "1",
+    "length": "200"
+}]
+repeatCount = 1
 animateProjectFile(projectFile, frameFolder, setsOfProperties, repeatCount, preserveFrames)
