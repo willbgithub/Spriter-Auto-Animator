@@ -15,14 +15,14 @@ def createFolder(projectFile, frameFolderName):
     # determine folder id
     if re.search(isolatedFrameFolder, projectFile):
         folderID = re.search(rf"<folder id=\"(\d+)\" name=\"{isolatedFrameFolder}\">.+?</folder>", projectFile, re.S).group(1)
-        folder = re.search(f"<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">", projectFile).group()
-        fileID = 0
+        folder = re.search(rf"<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">.*?</folder>", projectFile, re.S).group()
+        fileID = len(re.findall(r"<file id=\"", folder))
         for frame in frameFolder:
             isolatedFrame = re.search(r"[^\\]+$", frame).group()
             if re.search(rf"<file id=\"(\d+)\" name=\"{isolatedFrameFolder}/{isolatedFrame}\"", folder) == None:
-                folder += f"\n\t\t<file id=\"{fileID}\" name=\"{isolatedFrameFolder}/{isolatedFrame}\"/>"
+                newFile = f"<file id=\"{fileID}\" name=\"{isolatedFrameFolder}/{isolatedFrame}\"/>"
+                folder = re.sub(rf"(<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">.*?)(</folder>)", rf"\g<1>\t{newFile}\n\t\g<2>", folder, flags=re.S)
             fileID += 1
-        folder += "\n\t</folder>"
         return(folder, False)
     # else
     folderID = len(re.findall(r"<folder id=\"\d+\" name=\"[^\"]+\">", projectFile))
@@ -108,7 +108,8 @@ def createAnimation(projectFile, frameFolderName, setsOfProperties, repeatCount,
     loopCounter = 0
     print(animationText)
     for index in range(keyframeCount):
-        fileID = re.search(f"<file id=\"({counter})\" name=\".*?{frameFolder[counter]}", folder).group(1)
+        print(folder)
+        fileID = re.search(rf"<file id=\"(\d+)\" name=\".*?{frameFolder[counter]}", folder).group(1)
         objectProperties = f"x=\"{setsOfProperties[currentSet]["x"]}\" y=\"{setsOfProperties[currentSet]["y"]}\" angle=\"{setsOfProperties[currentSet]["angle"]}\" scale_x=\"{setsOfProperties[currentSet]["scale_x"]}\" scale_y=\"{setsOfProperties[currentSet]["scale_y"]}\" pivot_x=\"{setsOfProperties[currentSet]["pivot_x"]}\" pivot_y=\"{setsOfProperties[currentSet]["pivot_y"]}\" a=\"{setsOfProperties[currentSet]["a"]}\""
         currentSet += 1
         if currentSet == len(setsOfProperties):
@@ -155,19 +156,8 @@ setsOfProperties = [{
     "pivot_x": "0.5",
     "pivot_y": "0",
     "a": "1",
-    "length": "100"
-},
-{
-    "x": "0",
-    "y": "0",
-    "angle": "0",
-    "scale_x": "1",
-    "scale_y": "0.2",
-    "pivot_x": "0.5",
-    "pivot_y": "0",
-    "a": "1",
-    "length": "100"
+    "length": "200"
 }]
-repeatCount = 9
+repeatCount = 0
 preserveFrames = False
 animateProjectFile(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames)
