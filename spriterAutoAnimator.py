@@ -2,7 +2,10 @@ import re
 import os
 
 def fileSort(file):
-    extensionlessFileName = int(re.search(r"[\d]+", file).group())
+    try:
+        extensionlessFileName = int(re.search(r"[\d]+", file).group())
+    except:
+        extensionlessFileName = file
     return extensionlessFileName
 
 def createFolder(projectFile, frameFolderName):
@@ -152,8 +155,19 @@ setsOfProperties = [{
     "pivot_x": "0.5",
     "pivot_y": "0",
     "a": "1",
-    "length": "200"
+    "length": "100"
+},
+{
+    "x": "0",
+    "y": "0",
+    "angle": "0",
+    "scale_x": "1",
+    "scale_y": "0.2",
+    "pivot_x": "0.5",
+    "pivot_y": "0",
+    "a": "1",
+    "length": "100"
 }]
-repeatCount = 0
+repeatCount = 9
 preserveFrames = False
 animateProjectFile(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames)
