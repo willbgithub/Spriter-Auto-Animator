@@ -1,151 +1,110 @@
 import re
 import os
 
-def fileSort(file):
-    try:
-        extensionlessFileName = int(re.search(r"[\d]+", file).group())
-    except:
-        extensionlessFileName = file
-    return extensionlessFileName
+def createFolder(frameFolderName, projectFileText):
+    print(f"\ncreateFolder()")
+    if re.search(rf"<folder id=\"\d+\" name=\"{frameFolderName}\">.*?</folder>", projectFileText, re.S) == None:
+        isNewFolder = True
+        # create new folder
+        folderID = len(re.findall(rf"<folder id=\"(\d+)\" name=\"{frameFolderName}\">.*?</folder>", projectFileText, re.S)).group(1)
+        folder = f"\t<folder id=\"{folderID}\" name=\"{frameFolderName}\">\n\t</folder>"
+    else:
+        isNewFolder = False
+        folder = re.search(rf"<folder id=\"\d+\" name=\"{frameFolderName}\">.*?</folder>", projectFileText, re.S).group()
+        folder = f"\t{folder}"
+        folder = re.sub(r".*</folder>", "\t</folder>", folder)
+    fileID = 0
+    for frame in os.listdir(frameFolderName):
+        if re.search(f"{frameFolderName}/{frame}", projectFileText) == None:
+            # add file to folder
+            file = f"<file id=\"{fileID}\" name=\"{frameFolderName}/{frame}\" pivot_x=\"0\" pivot_y=\"1\"/>"
+            folder = re.sub("(</folder>)", rf"\t{file}\n\t\g<1>", folder)
+        else:
+            # Bumps existing files into proper indentation
+            folder = re.sub(f"(<file id=\"{fileID}\" name=\"{frameFolderName}/{frame}\"[^/]*/>)", r"\g<1>", folder)
+        fileID += 1
+    print(folder)
+    return(folder, isNewFolder)
 
-def createFolder(projectFile, frameFolderName):
-    frameFolder = (os.listdir(frameFolderName))
-    frameFolder.sort(key = fileSort)
-    isolatedFrameFolder = re.search(r"[^\\]+$", frameFolderName).group()
-    # determine folder id
-    if re.search(isolatedFrameFolder, projectFile):
-        folderID = re.search(rf"<folder id=\"(\d+)\" name=\"{isolatedFrameFolder}\">.+?</folder>", projectFile, re.S).group(1)
-        folder = re.search(rf"<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">.*?</folder>", projectFile, re.S).group()
-        fileID = len(re.findall(r"<file id=\"", folder))
-        for frame in frameFolder:
-            isolatedFrame = re.search(r"[^\\]+$", frame).group()
-            if re.search(rf"<file id=\"(\d+)\" name=\"{isolatedFrameFolder}/{isolatedFrame}\"", folder) == None:
-                newFile = f"<file id=\"{fileID}\" name=\"{isolatedFrameFolder}/{isolatedFrame}\"/>"
-                folder = re.sub(rf"(<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">.*?)(</folder>)", rf"\g<1>\t{newFile}\n\t\g<2>", folder, flags=re.S)
-            fileID += 1
-        return(folder, False)
-    # else
-    folderID = len(re.findall(r"<folder id=\"\d+\" name=\"[^\"]+\">", projectFile))
-    newFolder = f"\t<folder id=\"{folderID}\" name=\"{isolatedFrameFolder}\">"
-    counter = 0
-    for frame in frameFolder:
-        newFolder += f"\n\t\t<file id=\"{counter}\" name=\"{isolatedFrameFolder}/{frame}\"/>"
-        counter += 1
-    newFolder += "\n\t</folder>"
-    return(newFolder, True)
+def createAnimation(frameFolderName, projectFileText, repeatCount, setsOfProperties, folder):
+    print("\ncreateAnimation()")
+    
+    # animation folder
+    animationID = len(re.findall(r"<animation id=\"\d+\".*?</animation>", projectFileText, re.S))
+    animationName = f"Auto Generated Animation {len(re.findall(r"Auto Generated Animation \d+", projectFileText))}"
+    keyframeCount = len(os.listdir(frameFolderName)) * (repeatCount+1)
+    # Variables are defined later
+    animationText = f"\t</animation>"
         
-def createAnimation(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames, folder, folderID):
-    frameFolder = (os.listdir(frameFolderName))
-    frameFolder.sort(key = fileSort)
-    animationID = len(re.findall(r"<animation id", projectFile))
+    # timeline folders
     counter = 0
-    while re.search(rf"<animation id=\"\d+\" name=\"animation{counter}\">", projectFile):
-        counter+=1
-    animationName = f"animation{counter}"
-    length = 0
+    for frame in os.listdir(frameFolderName):
+        extensionlessFrame = re.sub(r"\..+$", "", frame)
+        animationText = re.sub("</animation>", f"\t<timeline id=\"{counter}\" name=\"{extensionlessFrame}\">\n\t\t\t</timeline>\n\t\t</animation>", animationText)
+        counter += 1
+    
+    # mainline + filling timeline folders
+    animationText = "\t\t\t<mainline>\n\t\t\t</mainline>\n\t" + animationText
     currentSet = 0
-    for frame in frameFolder:
+    frameCounter = 0
+    keyCounter = 0
+    length = 0
+    objects = ""
+    for counter in range(keyframeCount):
+        # mainline
+        objects = f"<object_ref id=\"0\" timeline=\"{frameCounter}\" key=\"{keyCounter}\" z_index=\"0\"/>"
+        # create key folder
+        animationText = re.sub("</mainline>", f"\t<key id=\"{counter}\" time=\"{length}\">\n\t\t\t\t\t{objects}\n\t\t\t\t</key>\n\t\t\t</mainline>", animationText)
+        
+        # timeline
+        keyID = len(re.findall("<key id=", re.search(f"<timeline id=\"{frameCounter}\".*?</timeline>", animationText, re.S).group()))
+        key = f"<key id=\"{keyID}\" time=\"{length}\">\n\t\t\t\t</key>"
+        fileID = re.search(rf"<file id=\"(\d+)\" name=\"{frameFolderName}/{os.listdir(frameFolderName)[frameCounter]}\"", folder).group(1)
+        objectProperties = f"x=\"{setsOfProperties[currentSet]["x"]}\" y=\"{setsOfProperties[currentSet]["y"]}\" angle=\"{setsOfProperties[currentSet]["angle"]}\" pivot_x=\"{setsOfProperties[currentSet]["pivot_x"]}\" pivot_y=\"{setsOfProperties[currentSet]["pivot_y"]}\" scale_x=\"{setsOfProperties[currentSet]["scale_x"]}\" scale_y=\"{setsOfProperties[currentSet]["scale_y"]}\" a=\"{setsOfProperties[currentSet]["a"]}\""
+        objectFolder = f"<object folder=\"0\" file=\"{fileID}\" {objectProperties}/>"
+        animationText = re.sub(f"(<timeline id=\"{frameCounter}\".*?)(</timeline>)", rf"\g<1>\t{key}\n\t\t\t\g<2>", animationText, flags=re.S)
+        animationText = re.sub(f"(<timeline id=\"{frameCounter}\".*?<key id=\"{keyID}\".*?)(</key>)", rf"\g<1>\t{objectFolder}\n\t\t\t\t\g<2>", animationText, flags=re.S)
+
+        
         length += int(setsOfProperties[currentSet]["length"])
         currentSet += 1
         if currentSet == len(setsOfProperties):
             currentSet = 0
-    length *= (repeatCount+1)
-    animationText = f"\t\t<animation id=\"{animationID}\" name=\"{animationName}\" length=\"{length}\">"
-
-    # mainline
-    animationText += "\n\t\t\t<mainline>"
-    print("Created mainline start.")
-    keyframeCount = (repeatCount+1) * len(frameFolder)
-    currentSet = 0
-    time = 0
-    keyNumber = 0
-    resettingCounter = 0
-    objects = "\n\t\t\t\t\t<object_ref id=\"0\" timeline=\"0\" key=\"0\" z_index=\"0\"/>"
-    for counter in range(keyframeCount):
-        animationText += f"\n\t\t\t\t<key id=\"{counter}\" time=\"{time}\">"
-        print(f"Printed key id \"{counter}\" at time \"{time}\"")
-        animationText += f"{objects}"
-        print(f"Printed \"{objects}\"")
-        animationText += "\n\t\t\t\t</key>"
-        print(f"Capped key.")
-        time += int(setsOfProperties[currentSet]["length"])
-        currentSet += 1
-        if currentSet == len(setsOfProperties):
-            currentSet = 0
-        if (counter+1) % len(frameFolder) == 0:
-            keyNumber += 1
-            resettingCounter = -1
-        if preserveFrames:
-            objects += f"\n\t\t\t\t\t<object_ref id=\"{counter}\" timeline=\"{resettingCounter+1}\" key=\"{keyNumber}\" z_index=\"{counter}\"/>"
-        else:
-            objects = f"\n\t\t\t\t\t<object_ref id=\"0\" timeline=\"{resettingCounter+1}\" key=\"{keyNumber}\" z_index=\"0\"/>"
-        resettingCounter += 1
-    animationText += "\n\t\t\t</mainline>"
-    print("Capped mainline")
-    
-    # timeline
-    counter = 0
-    time = 0
-    currentSet = 0
-    for frame in frameFolder:
-        isolatedFrame = re.search(r"^[^\.]+", frame).group()
-        animationText += f"\n\t\t\t<timeline id=\"{counter}\" name=\"{isolatedFrame}\">\n\t\t\t</timeline>"
-        counter += 1
-    counter = 0
-    for index in range(keyframeCount):
-        keyID = len(re.findall("<key id=\"", re.search(rf"<timeline id=\"{counter}\".*?</timeline>", animationText, re.S).group()))
-        keyframe = f"\t<key id=\"{keyID}\" time=\"{time}\">\n\t\t\t\t</key>"
-        animationText = re.sub(rf"(<timeline id=\"{counter}\" name=\"[^\"]+\">.*?)(</timeline>)", rf"\g<1>{keyframe}\n\t\t\t\g<2>", animationText, flags=re.S)
-        time += int(setsOfProperties[currentSet]["length"])
-        currentSet += 1
-        if currentSet == len(setsOfProperties):
-            currentSet = 0
-        counter += 1
-        if counter == len(frameFolder):
-            counter = 0
-    counter = 0
-    currentSet = 0
-    loopCounter = 0
+        frameCounter += 1
+        if frameCounter == len(os.listdir(frameFolderName)):
+            frameCounter = 0
+            keyCounter += 1
     print(animationText)
-    for index in range(keyframeCount):
-        print(folder)
-        fileID = re.search(rf"<file id=\"(\d+)\" name=\".*?{frameFolder[counter]}", folder).group(1)
-        objectProperties = f"x=\"{setsOfProperties[currentSet]["x"]}\" y=\"{setsOfProperties[currentSet]["y"]}\" angle=\"{setsOfProperties[currentSet]["angle"]}\" scale_x=\"{setsOfProperties[currentSet]["scale_x"]}\" scale_y=\"{setsOfProperties[currentSet]["scale_y"]}\" pivot_x=\"{setsOfProperties[currentSet]["pivot_x"]}\" pivot_y=\"{setsOfProperties[currentSet]["pivot_y"]}\" a=\"{setsOfProperties[currentSet]["a"]}\""
-        currentSet += 1
-        if currentSet == len(setsOfProperties):
-            currentSet = 0
-        objectFolder = f"<object folder=\"{folderID}\" file=\"{fileID}\" {objectProperties}/>"
-        animationText = re.sub(rf"(<timeline id=\"{counter}\".*?<key id=\"{loopCounter}\".*?)(</key>)", rf"\g<1>\t{objectFolder}\n\t\t\t\t\g<2>", animationText, flags=re.S)
-        print(animationText)
-        counter += 1
-        if counter == len(frameFolder):
-            counter = 0
-            loopCounter += 1
-    animationText += "\n\t\t</animation>"
+    animationText = f"\t\t<animation id=\"{animationID}\" name=\"{animationName}\" length=\"{length}\">\n{animationText}"
     return(animationText)
 
-def animateProjectFile(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames):
-    folder, isNewFolder = createFolder(projectFile, frameFolderName)
-    folderID = re.search(rf"\d+", folder).group()
-    newAnimation = createAnimation(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames, folder, folderID)
+def updateFile(frameFolderName, projectFileText, repeatCount, setsOfProperties):
+    print(f"\nupdateFile()")
+    folder, isNewFolder = createFolder(frameFolderName=frameFolderName, projectFileText=projectFileText)
+    animation = createAnimation(frameFolderName=frameFolderName, projectFileText=projectFileText, repeatCount=repeatCount, setsOfProperties=setsOfProperties, folder=folder)
+
+    if isNewFolder:
+        outputText = re.sub("</folder>.+$", rf"\g<0>\n{folder}", projectFileText, flags=re.S)
+    else:
+        outputText = re.sub(rf"[^\n]*<folder id=\"\d+\" name=\"{frameFolderName}\">.*?</folder>", folder, projectFileText, flags=re.S)
+    
+    outputText = re.sub("(</animation>)(.+$)", rf"\g<1>\n{animation}\g<2>", projectFileText, flags=re.S)
+    print(f"\n{outputText}")
+    
+    # creates the new animation file
     counter = 0
     while True:
         try:
-            open(f"Spriter Auto Animation {counter}.scml", "x")
+            outputFile = open(f"spriter{counter}.scml", "x")
             break
         except:
             counter += 1
-    outputFile = open(f"Spriter Auto Animation {counter}.scml", "w")
-    outputText = projectFile
-    if isNewFolder:
-        outputText = re.sub(r"(.+</folder>)", rf"\g<1>\n{folder}", outputText, flags=re.S)
-    else:
-        outputText = re.sub(rf"<folder id=\"{folderID}\".*?</folder>", folder, outputText, flags=re.S)
-    outputText = re.sub(rf"(.+</animation>)", rf"\g<1>\n{newAnimation}", outputText, flags=re.S)
+    outputFile = open(f"spriter{counter}.scml", "w")
     outputFile.write(outputText)
+    print(f"spriter{counter}.scml created.")
 
-projectFile = open(r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\summer_shrine.scml").read()
-frameFolderName = r"C:\\Users\wilje\Documents\\GitHub\Spriter-Auto-Animator\\summer_shrine"
+frameFolderName = "redFrames"
+projectFileText = open("redIdle.scml", "r").read()
 repeatCount = 0
 setsOfProperties = [{
     "x": "0",
@@ -158,6 +117,5 @@ setsOfProperties = [{
     "a": "1",
     "length": "200"
 }]
-repeatCount = 0
-preserveFrames = False
-animateProjectFile(projectFile, frameFolderName, setsOfProperties, repeatCount, preserveFrames)
+
+updateFile(frameFolderName=frameFolderName, projectFileText=projectFileText, repeatCount=repeatCount, setsOfProperties=setsOfProperties)
